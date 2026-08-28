@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # Container do Banco de Dados MySQL
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_financeiro
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sistema_financeiro
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Interface gráfica visual para você acessar o MySQL pelo navegador (substitui o MySQL Workbench)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_financeiro
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql_db
+      MYSQL_ROOTPASSWORD: rootpassword
+
+volumes:
+  mysql_data:

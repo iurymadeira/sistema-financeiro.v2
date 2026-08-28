@@ -1,4 +1,4 @@
-const { calcularProjecao } = require('../src/core/regras.js');
+const { calcularProjecao } = require('../../src/core/regras.js');
 
 console.log('--- EXECUTANDO TESTES UNITÁRIOS ---');
 
@@ -24,7 +24,7 @@ if (totalMesesRetornados === 12) {
   console.error(`❌ TESTE 2 FALHOU: Esperava 12 meses, recebeu ${totalMesesRetornados}`);
 }
 
-// Teste 3: Injeção de Data (Simula virada de ano em 31/12/2026)
+// Injeção de Data (Simula virada de ano em 31/12/2026)
 const dataFicticia = new Date(2026, 11, 31); 
 const resultadoVirada = calcularProjecao(1000, 500, 2000, 1, dataFicticia);
 
