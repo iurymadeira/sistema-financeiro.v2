@@ -1,17 +1,22 @@
 const db = require('../config/database');
+const calculoService = require('../services/calculoService');
 
-exports.salvarConfiguracao = async (req, res) => {
+exports.calcularEProjetar = async (req, res) => {
   try {
-    const { saldoInicial, gastosFixos, receitasFixas, anos } = req.body;
+    const { saldoInicial, gastosFixos, receitasFixas, anos, transacoesVariaveis } = req.body;
 
-    // Validação de Segurança e Regra de Negócio na API
-    if (isNaN(saldoInicial) || saldoInicial < 0 ||
-        isNaN(gastosFixos) || gastosFixos < 0 ||
-        isNaN(receitasFixas) || receitasFixas < 0 ||
-        isNaN(anos) || anos < 1 || anos > 30) {
-      return res.status(400).json({ sucesso: false, erro: 'Dados de entrada inválidos.' });
-    }
+    // 1. Processa o cálculo e as métricas usando o serviço de backend
+    const projecao = calculoService.calcularProjecao(
+      parseFloat(saldoInicial) || 0,
+      parseFloat(gastosFixos) || 0,
+      parseFloat(receitasFixas) || 0,
+      parseInt(anos) || 1,
+      transacoesVariaveis || []
+    );
 
+    const metricas = calculoService.obterMetricasProjecao(projecao);
+
+    // 2. Persiste as configurações no MySQL
     const sql = `
       INSERT INTO configuracao_financeira (id, saldo_inicial, gastos_fixos, receitas_fixas, anos_projecao)
       VALUES (1, ?, ?, ?, ?)
@@ -24,10 +29,15 @@ exports.salvarConfiguracao = async (req, res) => {
 
     await db.execute(sql, [saldoInicial, gastosFixos, receitasFixas, anos]);
 
-    res.json({ sucesso: true, mensagem: 'Dados gravados no MySQL com sucesso!' });
+    // 3. Retorna a projeção e métricas calculadas para a tela
+    res.json({
+      sucesso: true,
+      projecao,
+      metricas
+    });
   } catch (erro) {
-    console.error('Erro ao salvar no MySQL:', erro);
-    res.status(500).json({ sucesso: false, erro: 'Erro interno ao salvar no banco.' });
+    console.error('Erro ao calcular projeção no Backend:', erro);
+    res.status(400).json({ sucesso: false, erro: erro.message });
   }
 };
 
@@ -35,9 +45,7 @@ exports.carregarConfiguracao = async (req, res) => {
   try {
     const [linhas] = await db.execute('SELECT * FROM configuracao_financeira WHERE id = 1');
 
-    if (linhas.length === 0) {
-      return res.json(null);
-    }
+    if (linhas.length === 0) return res.json(null);
 
     const dado = linhas[0];
     res.json({
