@@ -6,24 +6,29 @@ services:
     image: mysql:8.0
     container_name: mysql_financeiro
     restart: always
+    env_file:
+      - ./backend/.env
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: sistema_financeiro
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # Interface gráfica visual para você acessar o MySQL pelo navegador (substitui o MySQL Workbench)
+  # Interface gráfica visual para acessar o MySQL pelo navegador (substitui o MySQL Workbench)
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin_financeiro
     restart: always
     ports:
       - "8080:80"
+    env_file:
+      - ./backend/.env
     environment:
       PMA_HOST: mysql_db
-      MYSQL_ROOTPASSWORD: rootpassword
+      MYSQL_ROOTPASSWORD: ${DB_PASSWORD}
 
 volumes:
   mysql_data:
