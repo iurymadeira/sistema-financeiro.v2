@@ -1,11 +1,11 @@
 // --- CAMADA DE ESTADO (Fonte única da verdade) ---
 const estado = {
+  usuarioId: 1, // Usuário padrão por enquanto (antes de implementar login)
   saldoInicial: 0,
-  gastosFixos: 0,
-  receitasFixas: 0,
   anos: 1,
-  transacoesVariaveis: [],
-  projecaoAtual: null
+  transacoes: [],       // Transações reais carregadas do banco
+  projecaoAtual: null,
+  metricasAtuais: null
 };
 
 function definirEstado(novosDados) {

@@ -1,43 +1,54 @@
 const db = require('../config/database');
 const calculoService = require('../services/calculoService');
+const transacaoRepository = require('../repositories/transacaoRepository');
+const excecaoRepository = require('../repositories/excecaoRepository');
 
 exports.calcularEProjetar = async (req, res) => {
   try {
-    const { saldoInicial, gastosFixos, receitasFixas, anos, transacoesVariaveis } = req.body;
+    const { usuarioId, saldoInicial, anos } = req.body;
 
-    // 1. Processa o cálculo e as métricas usando o serviço de backend
+    if (!usuarioId) {
+      return res.status(400).json({ sucesso: false, erro: 'usuarioId é obrigatório.' });
+    }
+
+    // 1. Busca todas as transações do usuário no banco
+    const transacoes = await transacaoRepository.buscarPorUsuario(usuarioId);
+
+    // 2. Busca todas as exceções de cada transação recorrente
+    const excecoes = [];
+    for (const t of transacoes) {
+      if (t.recorrente) {
+        const excs = await excecaoRepository.buscarPorTransacaoPai(t.id);
+        excecoes.push(...excs);
+      }
+    }
+
+    // 3. Calcula a projeção com os dados reais do banco
     const projecao = calculoService.calcularProjecao(
       parseFloat(saldoInicial) || 0,
-      parseFloat(gastosFixos) || 0,
-      parseFloat(receitasFixas) || 0,
-      parseInt(anos) || 1,
-      transacoesVariaveis || []
+      transacoes,
+      excecoes,
+      parseInt(anos) || 1
     );
 
     const metricas = calculoService.obterMetricasProjecao(projecao);
 
-    // 2. Persiste as configurações no MySQL
+    // 4. Persiste o saldo inicial e o período escolhidos pelo usuário
     const sql = `
       INSERT INTO configuracao_financeira (id, saldo_inicial, gastos_fixos, receitas_fixas, anos_projecao)
-      VALUES (1, ?, ?, ?, ?)
+      VALUES (1, ?, 0, 0, ?)
       ON DUPLICATE KEY UPDATE
         saldo_inicial = VALUES(saldo_inicial),
-        gastos_fixos = VALUES(gastos_fixos),
-        receitas_fixas = VALUES(receitas_fixas),
         anos_projecao = VALUES(anos_projecao);
     `;
+    await db.execute(sql, [saldoInicial, anos]);
 
-    await db.execute(sql, [saldoInicial, gastosFixos, receitasFixas, anos]);
+    // 5. Retorna projeção e métricas para a tela
+    res.json({ sucesso: true, projecao, metricas });
 
-    // 3. Retorna a projeção e métricas calculadas para a tela
-    res.json({
-      sucesso: true,
-      projecao,
-      metricas
-    });
   } catch (erro) {
     console.error('Erro ao calcular projeção no Backend:', erro);
-    res.status(400).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
 };
 
