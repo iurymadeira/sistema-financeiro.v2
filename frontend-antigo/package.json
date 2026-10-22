@@ -1,0 +1,14 @@
+{
+  "name": "sistema-financeiro-frontend",
+  "version": "1.0.0",
+  "description": "Interface gráfica do Sistema Financeiro",
+  "main": "src/ui/app.js",
+  "scripts": {
+    "test": "node tests/teste.js",
+    "test:watch": "node --watch tests/teste.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
